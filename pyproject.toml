@@ -10,6 +10,9 @@ python = "^3.9"
 black = "^24.10.0"
 isort = "^5.13.2"
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
 [tool.isort]
 profile = "black"
 line_length = 79
