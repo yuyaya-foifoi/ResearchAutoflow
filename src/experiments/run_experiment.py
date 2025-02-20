@@ -42,9 +42,14 @@ def run_experiment(
     df_list = []
     df_list.append(initial_survey_df)
 
+    s3_upload_enabled = all([bucket, s3_folder, access_key, secret_key, region])
+    if s3_upload_enabled:
+        s3_folder = s3_folder + jst_date + "/"
+    else:
+        print("S3アップロードはスキップされます（必要なパラメータがNoneです）")
+
     jst = timezone(timedelta(hours=9))  # 日本時間（JST）
     jst_date = datetime.now(jst).strftime("%Y-%m-%d_%H-%M-%S")
-    s3_folder = s3_folder + jst_date + "/"
 
     # 初回の実験
     print("=" * 30 + "初回実験" + "=" * 30)
@@ -143,6 +148,7 @@ def run_experiment(
         with open("experiment_summary.txt", "w", encoding="utf-8") as file:
             file.write(experiment_summary.content)
 
-        upload_folder_to_s3(bucket, s3_folder, access_key, secret_key, region)
+        if s3_upload_enabled:
+            upload_folder_to_s3(bucket, s3_folder, access_key, secret_key, region)
 
     # return idea, combined_df
