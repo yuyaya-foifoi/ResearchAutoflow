@@ -1,8 +1,5 @@
 import base64
 import json
-import os
-import re
-import urllib.parse
 from io import BytesIO
 from textwrap import dedent
 from typing import Dict, List
@@ -16,7 +13,10 @@ from pydantic import BaseModel
 from PyPDF2 import PdfReader
 
 from ..openai_interaction.arxiv import explain_paper
-from ..openai_interaction.github import extract_core_implementation
+from ..openai_interaction.github import (
+    extract_core_implementation,
+    fetch_github_code,
+)
 
 
 def fetch_arxiv_papers(query, max_results=10):
@@ -176,52 +176,3 @@ def analyze_papers_to_df(query: str, num_papers: int = 5) -> pd.DataFrame:
         )
 
     return df
-
-
-def fetch_github_code(github_url, max_tokens=50000):
-    """
-    GitHub URLからコードを取得する関数
-
-    Args:
-        github_url (str): GitHubのURL（例：https://github.com/username/repository）
-        max_tokens (int): 取得するトークンの最大数（デフォルト: 50000）
-
-    Returns:
-        str: レスポンステキスト（エラーの場合はNone）
-    """
-    # GitHubのURLからリポジトリパスを抽出
-    match = re.match(r"https?://github\.com/([^/]+/[^/]+)/?.*", github_url)
-    if not match:
-        print("Invalid GitHub URL")
-        return None
-
-    repo_path = match.group(1)
-
-    # ベースURLとパラメータの設定
-    base_url = "https://uithub.com"
-    params = {
-        "accept": "text/plain",
-        "maxTokens": str(max_tokens),
-        "ext": "py",
-    }
-
-    try:
-        # URLの構築
-        url = f"{base_url}/{repo_path}"
-
-        # パラメータを追加してエンコード
-        full_url = f"{url}?{urllib.parse.urlencode(params)}"
-
-        # リクエストの送信
-        response = requests.get(full_url)
-
-        # ステータスコードの確認
-        if response.status_code == 200:
-            return response.text
-        else:
-            print(f"Error: Status code {response.status_code}")
-            return None
-
-    except Exception as e:
-        print(f"Error occurred: {str(e)}")
-        return None
