@@ -93,13 +93,18 @@ def run_experiment(
             "-" * 25 + f"\n実験結果の解析:\n{experiment_explanation}\n"
         )
 
+        if iteration == 0:
+            survey_arg = initial_survey_df
+        else:
+            survey_arg = combined_df
+
         # 批評とアイデアの更新
-        critic_message = critic(code, code_desc, experiment_explanation, "")
+        critic_message = critic(code, code_desc, experiment_explanation, survey_arg.to_string())
         experiment_log += (
             "-" * 25 + f"\n批評家からのコメント:\n{critic_message.content}\n"
         )
         idea_set = update_idea(
-            idea, code, code_desc, experiment_explanation, critic_message, ""
+            idea, code, code_desc, experiment_explanation, critic_message, survey_arg.to_string()
         )
 
         # 論文解析
