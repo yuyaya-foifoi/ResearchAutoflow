@@ -3,11 +3,9 @@ from textwrap import dedent
 
 from openai import OpenAI
 from pydantic import BaseModel
+from ..config.models import MODEL, SMART_MODEL, ELITE_MODEL
 
 client = OpenAI()
-MODEL = "gpt-4o"  # o1-mini-2024-09-12 / gpt-4o
-SMART_MODEL = "o1-mini-2024-09-12"  # o1-preview-2024-09-12, o1-mini-2024-09-12
-ELITE_MODEL = "o1-preview-2024-09-12"
 
 coder_prompt = """
 あなたはユーザーの機械学習実験のアイデアを元に、コードを作成するAIです。
@@ -17,7 +15,8 @@ coder_prompt = """
 - このpython_codeは絶対に説明などは含めないでください。
 - 出力されたpythonコードは exec() を使って実行可能である必要があります
 - ** GPUが使えるのでGPUを使う前提のコードで絶対にコーディングしてください **
-- このpython codeは理論的な背景がが十分にある必要があります
+- このpython codeは理論的な背景が十分にある必要があります
+- このpython codeでは、有名なベンチマークデータセットを使って、既存の手法との良し悪しが比較可能である必要があります
 - ** python_code内では全ての可視化を experiment.png という名前で、1枚の画像として実験のlogを画像としてカレントdirに保存してください**
 
 ---- 出力
@@ -33,6 +32,7 @@ coder_explain_prompt = """
 - 出力されたpythonコードは exec() を使って実行可能である必要があります
 - ** GPUが使えるのでGPUを使う前提のコードで絶対にコーディングしてください **
 - このpython codeは理論的な背景がが十分にある必要があります
+- このpython codeでは、有名なベンチマークデータセットを使って、既存の手法との良し悪しが比較可能である必要があります
 - ** python_code内では全ての可視化を experiment.png という名前で、1枚の画像として実験のlogを画像としてカレントdirに保存してください**
 - 中間のlogをprintで見せる必要はないです。またプログレスバーも絶対に表示しないで
 
@@ -49,6 +49,7 @@ fix_code_prompt = """
 - 出力されたpythonコードは exec() を使って実行可能である必要があります
 - ** GPUが使えるのでGPUを使う前提のコードで絶対にコーディングしてください **
 - このpython codeは理論的な背景がが十分にある必要があります
+- このpython codeでは、有名なベンチマークデータセットを使って、既存の手法との良し悪しが比較可能である必要があります
 - ** python_code内では全ての可視化を experiment.png という名前で、1枚の画像として実験のlogを画像としてカレントdirに保存してください**
 - 中間のlogをprintで見せる必要はないです。またプログレスバーも絶対に表示しないで
 
@@ -66,6 +67,7 @@ improve_code_prompt = """
 - 出力されたpythonコードは exec() を使って実行可能である必要があります
 - ** GPUが使えるのでGPUを使う前提のコードで絶対にコーディングしてください **
 - このpython codeは理論的な背景がが十分にある必要があります
+- このpython codeでは、有名なベンチマークデータセットを使って、既存の手法との良し悪しが比較可能である必要があります
 - ** python_code内では全ての可視化を experiment.png という名前で、1枚の画像として実験のlogを画像としてカレントdirに保存してください**
 - 中間のlogをprintで見せる必要はないです。またプログレスバーも絶対に表示しないで
 
@@ -270,15 +272,16 @@ update_idea_prompt = """
 """
 
 idea_prompt = """
-あなたは研究者のRQの整理者です。
+あなたは研究者が書いたRQの整理者です。
 研究者のメモ書きをもとに、研究アイデア（英語）と研究アイデアの説明（英語）に分けて。
 """
 
 experiment_summary_prompt = """
 以下の観点を説明して。
 - この実験ではアイデアがどのように発展していったのか
-- この実験を通して有望だと思う手法を発見できたのか。そしてそれは何なのか
-- この実験を通して発見したアイデアは学術的な貢献が高いのか
+- この実験で検証したアイデアはサーベイで得た既存の具体的な研究とどのように関係しているのか
+- この実験で検証したアイデアはサーベイで得た既存と比較して何が優れているのか
+- この実験で検証したアイデアをどのように今後改善できるのか
 """
 
 
@@ -294,21 +297,21 @@ class IdeaSchema(BaseModel):
 
 def write_initial_python_code(text: str):
     completion = client.chat.completions.create(
-        model=ELITE_MODEL,
+        model=SMART_MODEL,
         # temperature=0.2,
         messages=[
             {"role": "assistant", "content": coder_prompt},
             {"role": "user", "content": text},
         ],
     )
-    o1_output = completion.choices[0].message
+    reasoning_model_output = completion.choices[0].message
 
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=0.7,
         messages=[
             {"role": "system", "content": dedent(coder_explain_prompt)},
-            {"role": "user", "content": o1_output.content},
+            {"role": "user", "content": reasoning_model_output.content},
         ],
         response_format=CoderSchema,
     )
@@ -332,14 +335,14 @@ def fix_python_code(pythoncode: str, error_message: str):
             {"role": "user", "content": text},
         ],
     )
-    o1_output = completion.choices[0].message
+    reasoning_model_output = completion.choices[0].message
 
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=0.7,
         messages=[
             {"role": "system", "content": dedent(fix_code_prompt)},
-            {"role": "user", "content": o1_output.content},
+            {"role": "user", "content": reasoning_model_output.content},
         ],
         response_format=CoderSchema,
     )
@@ -371,20 +374,20 @@ def improve_python_code(
     """
 
     completion = client.chat.completions.create(
-        model=ELITE_MODEL,
+        model=SMART_MODEL,
         # temperature=0.2,
         messages=[
             {"role": "assistant", "content": coder_prompt},
             {"role": "user", "content": text},
         ],
     )
-    o1_output = completion.choices[0].message
+    reasoning_model_output = completion.choices[0].message
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=0.7,
         messages=[
             {"role": "system", "content": dedent(coder_explain_prompt)},
-            {"role": "user", "content": o1_output.content},
+            {"role": "user", "content": reasoning_model_output.content},
         ],
         response_format=CoderSchema,
     )
@@ -536,13 +539,13 @@ def generate_query(idea):
         ],
     )
 
-    o1_output = completion.choices[0].message
+    reasoning_model_output = completion.choices[0].message
     completion = client.beta.chat.completions.parse(
         model=MODEL,
         temperature=0.7,
         messages=[
             {"role": "system", "content": dedent(idea_prompt)},
-            {"role": "user", "content": o1_output.content},
+            {"role": "user", "content": reasoning_model_output.content},
         ],
         response_format=IdeaSchema,
     )

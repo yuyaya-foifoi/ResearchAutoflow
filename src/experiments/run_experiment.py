@@ -16,7 +16,6 @@ from ..openai_interaction.experiment import (
 from ..paper_analysis.arxiv import analyze_papers_to_df
 from .create_log import create_experiment_log
 from .run_code import retry_code_until_success
-from .util import clean_working_dir
 
 
 def run_experiment(
@@ -24,10 +23,10 @@ def run_experiment(
     initial_survey_df,
     num_experiment,
     bucket,
-    s3_folder,
-    access_key,
-    secret_key,
-    region,
+    s3_folder=None,
+    access_key=None,
+    secret_key=None,
+    region=None,
 ):
     """
     研究アイデアに基づいて実験を実行し、結果を記録する関数
@@ -76,7 +75,7 @@ def run_experiment(
                 ).content
         except Exception as e:
             experiment_explanation = (
-                f"コードに問題があってうまく動作しませんでした。何度も修正しましたがダメなのでコードは根本的な修正が必要です。\n"
+                f"コードに問題があってうまく動作しませんでした。何度も修正しましたが実行できないのでコードは根本的な修正が必要です。\n"
                 f"エラー詳細: {str(stderr_summary)}"
             )
 
@@ -145,7 +144,5 @@ def run_experiment(
             file.write(experiment_summary.content)
 
         upload_folder_to_s3(bucket, s3_folder, access_key, secret_key, region)
-
-    clean_working_dir()
 
     # return idea, combined_df

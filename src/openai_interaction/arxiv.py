@@ -2,10 +2,9 @@ from textwrap import dedent
 
 from openai import OpenAI
 from pydantic import BaseModel
+from ..config.models import MODEL
 
 client = OpenAI()
-MODEL = "gpt-4o"
-SMART_MODEL = "o1-mini-2024-09-12"
 
 paper_explain_prompt = """
 この論文の内容について詳しく説明して。
