@@ -22,7 +22,7 @@ def run_experiment(
     idea,
     initial_survey_df,
     num_experiment,
-    bucket,
+    bucket=None,
     s3_folder=None,
     access_key=None,
     secret_key=None,
