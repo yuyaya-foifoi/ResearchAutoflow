@@ -298,7 +298,7 @@ class IdeaSchema(BaseModel):
 
 def write_initial_python_code(text: str):
     completion = client.chat.completions.create(
-        model=SMART_MODEL,
+        model=ELITE_MODEL,
         # temperature=0.2,
         messages=[
             {"role": "assistant", "content": coder_prompt},
@@ -375,7 +375,7 @@ def improve_python_code(
     """
 
     completion = client.chat.completions.create(
-        model=SMART_MODEL,
+        model=ELITE_MODEL,
         # temperature=0.2,
         messages=[
             {"role": "assistant", "content": coder_prompt},
