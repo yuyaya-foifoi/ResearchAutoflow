@@ -1,6 +1,5 @@
 import base64
 import json
-
 from io import BytesIO
 from textwrap import dedent
 from typing import Dict, List
@@ -14,7 +13,10 @@ from pydantic import BaseModel
 from PyPDF2 import PdfReader
 
 from ..openai_interaction.arxiv import explain_paper
-from ..openai_interaction.github import fetch_github_code, extract_core_implementation
+from ..openai_interaction.github import (
+    extract_core_implementation,
+    fetch_github_code,
+)
 
 
 def fetch_arxiv_papers(query, max_results=10):
@@ -174,4 +176,3 @@ def analyze_papers_to_df(query: str, num_papers: int = 5) -> pd.DataFrame:
         )
 
     return df
-

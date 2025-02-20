@@ -2,6 +2,7 @@ from textwrap import dedent
 
 from openai import OpenAI
 from pydantic import BaseModel
+
 from ..config.models import MODEL
 
 client = OpenAI()

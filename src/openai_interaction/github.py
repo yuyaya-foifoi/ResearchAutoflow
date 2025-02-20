@@ -1,12 +1,12 @@
-from textwrap import dedent
-
 import os
 import re
 import urllib.parse
-import requests
+from textwrap import dedent
 
+import requests
 from openai import OpenAI
 from pydantic import BaseModel
+
 from ..config.models import MODEL, SMART_MODEL
 
 client = OpenAI()
@@ -67,7 +67,6 @@ def fetch_github_code(github_url, max_tokens=50000):
     except Exception as e:
         print(f"Error occurred: {str(e)}")
         return None
-
 
 
 def extract_core_implementation(code: str, proposed_method):

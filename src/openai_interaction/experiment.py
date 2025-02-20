@@ -3,7 +3,8 @@ from textwrap import dedent
 
 from openai import OpenAI
 from pydantic import BaseModel
-from ..config.models import MODEL, SMART_MODEL, ELITE_MODEL
+
+from ..config.models import ELITE_MODEL, MODEL, SMART_MODEL
 
 client = OpenAI()
 
