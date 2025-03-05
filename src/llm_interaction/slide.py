@@ -1,7 +1,6 @@
 import base64
 from textwrap import dedent
 
-from openai import OpenAI
 from pydantic import BaseModel
 
 from ..config.models import MODEL, WRITING_MODEL
@@ -271,6 +270,7 @@ extract_html_prompt = """
 HTMLのコードのみを抽出してください。
 """
 
+
 class HTMLSchema(BaseModel):
     HTML: str
 
@@ -299,11 +299,11 @@ def generate_html(
     """
 
     reasoning_model_output = call_llm(
-        WRITING_MODEL, system_promt=html_generate_prompt, user_prompt=text
+        WRITING_MODEL, system_prompt=html_generate_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=extract_html_prompt,
+        system_prompt=extract_html_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=HTMLSchema,

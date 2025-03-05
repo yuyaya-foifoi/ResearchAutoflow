@@ -314,11 +314,11 @@ class IdeaSchema(BaseModel):
 def write_initial_python_code(text: str):
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=coder_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=coder_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=coder_explain_prompt,
+        system_prompt=coder_explain_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=CoderSchema,
@@ -337,11 +337,11 @@ def fix_python_code(pythoncode: str, error_message: str):
     """
 
     reasoning_model_output = call_llm(
-        SMART_MODEL, system_promt=fix_code_prompt, user_prompt=text
+        SMART_MODEL, system_prompt=fix_code_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=coder_explain_prompt,
+        system_prompt=coder_explain_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=CoderSchema,
@@ -374,11 +374,11 @@ def improve_python_code(
     """
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=coder_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=coder_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=coder_explain_prompt,
+        system_prompt=coder_explain_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=CoderSchema,
@@ -403,7 +403,7 @@ def critic(code, code_desc, exp_desc, survey_df):
     """
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=critic_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=critic_prompt, user_prompt=text
     )
 
     return reasoning_model_output
@@ -413,7 +413,7 @@ def create_experiment_summary(experiment_log):
 
     reasoning_model_output = call_llm(
         ELITE_MODEL,
-        system_promt=experiment_summary_prompt,
+        system_prompt=experiment_summary_prompt,
         user_prompt=experiment_log,
     )
 
@@ -423,7 +423,7 @@ def create_experiment_summary(experiment_log):
 def wrap_up(log: str):
 
     model_output = call_llm(
-        MODEL, system_promt=wrap_up_prompt, user_prompt=log, temperature=0.7
+        MODEL, system_prompt=wrap_up_prompt, user_prompt=log, temperature=0.7
     )
 
     return model_output
@@ -451,11 +451,11 @@ def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df):
     """
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=update_idea_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=update_idea_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=idea_organize_prompt,
+        system_prompt=idea_organize_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=IdeaSchema,
@@ -474,11 +474,11 @@ def generate_initial_idea(idea, survey_df):
     """
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=update_idea_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=update_idea_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=idea_organize_prompt,
+        system_prompt=idea_organize_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=IdeaSchema,
@@ -494,11 +494,11 @@ def generate_query(idea):
     """
 
     reasoning_model_output = call_llm(
-        ELITE_MODEL, system_promt=query_prompt, user_prompt=text
+        ELITE_MODEL, system_prompt=query_prompt, user_prompt=text
     )
     formatted_model_output = call_llm(
         MODEL,
-        system_promt=query_organize_prompt,
+        system_prompt=query_organize_prompt,
         user_prompt=reasoning_model_output,
         temperature=0.7,
         schema=IdeaSchema,
