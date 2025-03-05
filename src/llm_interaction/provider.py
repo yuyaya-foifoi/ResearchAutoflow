@@ -12,12 +12,13 @@ def call_anthropic_model(
     client = Anthropic()
 
     messages = [
-        {"role": "system", "content": system_prompt},
+        #{"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
 
     message = client.messages.create(
         model=model_name,
+        system=system_prompt,
         max_tokens=12800,
         messages=messages,
     )
