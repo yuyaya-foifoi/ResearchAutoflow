@@ -154,7 +154,7 @@ def run_experiment(
             "w",
             encoding="utf-8",
         ) as file:
-            file.write(slide_html)
+            file.write(slide_html.HTML)
         with open(
             os.path.join(f"iteration_{iteration+1}", "critic_message.txt"),
             "w",
