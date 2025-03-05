@@ -12,8 +12,8 @@ from PIL import Image
 from pydantic import BaseModel
 from PyPDF2 import PdfReader
 
-from ..openai_interaction.arxiv import explain_paper
-from ..openai_interaction.github import (
+from ..llm_interaction.arxiv import explain_paper
+from ..llm_interaction.github import (
     extract_core_implementation,
     fetch_github_code,
 )
