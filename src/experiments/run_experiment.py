@@ -4,18 +4,17 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
-
 from ..aws.s3 import upload_folder_to_s3
-from ..llm_interaction.slide import generate_html
 from ..llm_interaction.experiment import (
     create_experiment_summary,
     critic,
     explain_image,
+    generate_query,
     improve_python_code,
     update_idea,
     write_initial_python_code,
-    generate_query
 )
+from ..llm_interaction.slide import generate_html
 from ..paper_analysis.arxiv import analyze_papers_to_df
 from .create_log import create_experiment_log
 from .run_code import retry_code_until_success
@@ -138,7 +137,7 @@ def run_experiment(
             code_desc=code_desc,
             exp_desc=experiment_explanation,
             critic_message=critic_message,
-            survey_df=survey_arg.to_string()
+            survey_df=survey_arg.to_string(),
         )
 
         # ログの保存
