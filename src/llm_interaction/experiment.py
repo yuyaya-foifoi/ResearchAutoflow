@@ -5,6 +5,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from ..config.models import ELITE_MODEL, MODEL, SMART_MODEL
+from .provider import call_llm
 
 client = OpenAI()
 
@@ -162,7 +163,6 @@ explain_experiment = """
 """
 
 update_idea_prompt = """
-# 機械学習研究アイデア生成プロンプト
 
 あなたは機械学習のトップ国際会議の査読経験が豊富な研究者です。
 現在の研究アイデアを以下の観点から分析・改善し、トップ国際会議に採択される可能性の高い研究アイデアを英語で生成してください。
@@ -272,9 +272,24 @@ update_idea_prompt = """
 - 実用的価値の提示
 """
 
-idea_prompt = """
+idea_organize_prompt = """
 あなたは研究者が書いたRQの整理者です。
 研究者のメモ書きをもとに、研究アイデア（英語）と研究アイデアの説明（英語）に分けて。
+"""
+
+query_prompt = """
+あなたは研究者であり、arXivにおける論文サーベイが得意です。
+特定の研究トピックについて、arXivの検索窓に入力する最適なクエリを作成してください。
+検索結果の質を高めるため、適切なキーワード、演算子（AND, OR, NOT等）、フィールド指定子を組み合わせたクエリを提案してください。
+"""
+
+query_organize_prompt = """
+あなたは研究者アシスタントであり、研究者が入力したサーベイクエリの整理が得意です。
+研究者のメモ書きをもとに、以下の形式で整理してください：
+1. 研究アイデア（英語）
+2. 研究アイデアの詳細説明（英語）
+
+各項目を明確に分けて提示し、研究の方向性が明確になるよう支援してください。
 """
 
 experiment_summary_prompt = """
@@ -297,27 +312,19 @@ class IdeaSchema(BaseModel):
 
 
 def write_initial_python_code(text: str):
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": coder_prompt},
-            {"role": "user", "content": text},
-        ],
-    )
-    reasoning_model_output = completion.choices[0].message
 
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=coder_prompt, user_prompt=text
+    )
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=coder_explain_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(coder_explain_prompt)},
-            {"role": "user", "content": reasoning_model_output.content},
-        ],
-        response_format=CoderSchema,
+        schema=CoderSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def fix_python_code(pythoncode: str, error_message: str):
@@ -328,27 +335,19 @@ def fix_python_code(pythoncode: str, error_message: str):
     ---error message
     {error_message}
     """
-    completion = client.chat.completions.create(
-        model=SMART_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": coder_prompt},
-            {"role": "user", "content": text},
-        ],
-    )
-    reasoning_model_output = completion.choices[0].message
 
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    reasoning_model_output = call_llm(
+        SMART_MODEL, system_promt=fix_code_prompt, user_prompt=text
+    )
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=coder_explain_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(fix_code_prompt)},
-            {"role": "user", "content": reasoning_model_output.content},
-        ],
-        response_format=CoderSchema,
+        schema=CoderSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def improve_python_code(
@@ -374,26 +373,18 @@ def improve_python_code(
     {survey_df}
     """
 
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": coder_prompt},
-            {"role": "user", "content": text},
-        ],
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=coder_prompt, user_prompt=text
     )
-    reasoning_model_output = completion.choices[0].message
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=coder_explain_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(coder_explain_prompt)},
-            {"role": "user", "content": reasoning_model_output.content},
-        ],
-        response_format=CoderSchema,
+        schema=CoderSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def critic(code, code_desc, exp_desc, survey_df):
@@ -410,43 +401,32 @@ def critic(code, code_desc, exp_desc, survey_df):
     ---survey_df
     {survey_df}
     """
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": critic_prompt},
-            {"role": "user", "content": text},
-        ],
+
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=critic_prompt, user_prompt=text
     )
 
-    return completion.choices[0].message
+    return reasoning_model_output
 
 
 def create_experiment_summary(experiment_log):
 
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": experiment_summary_prompt},
-            {"role": "user", "content": experiment_log},
-        ],
+    reasoning_model_output = call_llm(
+        ELITE_MODEL,
+        system_promt=experiment_summary_prompt,
+        user_prompt=experiment_log,
     )
 
-    return completion.choices[0].message
+    return reasoning_model_output
 
 
 def wrap_up(log: str):
-    completion = client.chat.completions.create(
-        model=MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": wrap_up_prompt},
-            {"role": "user", "content": log},
-        ],
+
+    model_output = call_llm(
+        MODEL, system_promt=wrap_up_prompt, user_prompt=log, temperature=0.7
     )
 
-    return completion.choices[0].message
+    return model_output
 
 
 def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df):
@@ -470,27 +450,18 @@ def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df):
     {survey_df}
     """
 
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": update_idea_prompt},
-            {"role": "user", "content": text},
-        ],
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=update_idea_prompt, user_prompt=text
     )
-
-    o1_output = completion.choices[0].message
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=idea_organize_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(idea_prompt)},
-            {"role": "user", "content": o1_output.content},
-        ],
-        response_format=IdeaSchema,
+        schema=IdeaSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def generate_initial_idea(idea, survey_df):
@@ -502,27 +473,18 @@ def generate_initial_idea(idea, survey_df):
     {survey_df}
     """
 
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": update_idea_prompt},
-            {"role": "user", "content": text},
-        ],
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=update_idea_prompt, user_prompt=text
     )
-
-    o1_output = completion.choices[0].message
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=idea_organize_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(idea_prompt)},
-            {"role": "user", "content": o1_output.content},
-        ],
-        response_format=IdeaSchema,
+        schema=IdeaSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def generate_query(idea):
@@ -531,27 +493,18 @@ def generate_query(idea):
     {idea}
     """
 
-    completion = client.chat.completions.create(
-        model=ELITE_MODEL,
-        # temperature=0.2,
-        messages=[
-            {"role": "assistant", "content": update_idea_prompt},
-            {"role": "user", "content": text},
-        ],
+    reasoning_model_output = call_llm(
+        ELITE_MODEL, system_promt=query_prompt, user_prompt=text
     )
-
-    reasoning_model_output = completion.choices[0].message
-    completion = client.beta.chat.completions.parse(
-        model=MODEL,
+    formatted_model_output = call_llm(
+        MODEL,
+        system_promt=query_organize_prompt,
+        user_prompt=reasoning_model_output,
         temperature=0.7,
-        messages=[
-            {"role": "system", "content": dedent(idea_prompt)},
-            {"role": "user", "content": reasoning_model_output.content},
-        ],
-        response_format=IdeaSchema,
+        schema=IdeaSchema,
     )
 
-    return completion.choices[0].message.parsed
+    return formatted_model_output
 
 
 def encode_image(image_path):

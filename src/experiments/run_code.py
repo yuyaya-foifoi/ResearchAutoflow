@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytz
 
-from ..openai_interaction.experiment import fix_python_code
+from ..llm_interaction.experiment import fix_python_code
 
 
 def _filter_progress_bar(stderr: str) -> str:
