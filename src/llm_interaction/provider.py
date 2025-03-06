@@ -12,7 +12,7 @@ def call_anthropic_model(
     client = Anthropic()
 
     messages = [
-        #{"role": "system", "content": system_prompt},
+        # {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
 
