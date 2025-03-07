@@ -4,7 +4,7 @@ from textwrap import dedent
 from openai import OpenAI
 from pydantic import BaseModel
 
-from ..config.models import ELITE_MODEL, MODEL, SMART_MODEL
+from ..config.models import ELITE_MODEL, MODEL, SMART_MODEL, REFLECTION_MODEL
 from .prompt import (
     CODE_FORMAT_PROMPT,
     CODER_PROMPT,
@@ -17,6 +17,7 @@ from .prompt import (
     SURVEY_QUERY_PROMPT,
     UPDATE_IDEA_PROMPT,
     wrap_up_prompt,
+    REFLECTION_MODULE_PROMPT
 )
 from .provider import call_llm
 
@@ -73,7 +74,7 @@ def fix_python_code(pythoncode: str, error_message: str):
 
 
 def improve_python_code(
-    idea: str, code, code_desc, exp_desc, critic_message, survey_df
+    idea: str, code, code_desc, exp_desc, critic_message, survey_df, reflection_comment
 ):
     text = f"""
     ---idea
@@ -93,6 +94,9 @@ def improve_python_code(
 
     ---survey_df
     {survey_df}
+
+    ---reflection_comment
+    {reflection_comment}
     """
 
     reasoning_model_output = call_llm(
@@ -151,7 +155,7 @@ def wrap_up(log: str):
     return model_output
 
 
-def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df):
+def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df, reflection_comment):
     text = f"""
     ---previous_idea
     {idea}
@@ -170,6 +174,9 @@ def update_idea(idea, code, code_desc, exp_desc, critic_message, survey_df):
 
     ---survey_df
     {survey_df}
+
+    ---reflection_comment
+    {reflection_comment}
     """
 
     reasoning_model_output = call_llm(
@@ -265,3 +272,21 @@ def explain_image(img_path, code, code_desc):
         max_tokens=2048,
     )
     return response.choices[0].message
+
+
+# ------------------------------------ Reflection関係 ------------------------------------
+
+def reflection(log, survey_df):
+    text = f"""
+    ---log
+    {log}
+
+    ---survey
+    {survey_df}
+    """
+
+    reasoning_model_output = call_llm(
+        REFLECTION_MODEL, system_prompt=REFLECTION_MODULE_PROMPT, user_prompt=text
+    )
+
+    return reasoning_model_output

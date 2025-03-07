@@ -13,6 +13,7 @@ from ..llm_interaction.experiment import (
     improve_python_code,
     update_idea,
     write_initial_python_code,
+    reflection
 )
 from ..llm_interaction.slide import generate_html
 from ..paper_analysis.arxiv import analyze_papers_to_df
@@ -89,7 +90,7 @@ def run_experiment(
             )
 
         # ログの記録
-        experiment_log += "=" * 50 + f"試行{iteration + 1}" + "=" * 50
+        experiment_log += "<" * 50 + f"試行{iteration + 1}" + ">" * 50
         experiment_log += "-" * 25 + f"\n現在の研究アイデア:\n{idea}\n"
         experiment_log += "-" * 25 + f"\nコード:\n{code}\n"
         experiment_log += "-" * 25 + f"\nコードの説明:\n{code_desc}\n"
@@ -109,6 +110,11 @@ def run_experiment(
         experiment_log += (
             "-" * 25 + f"\n批評家からのコメント:\n{critic_message}\n"
         )
+        reflection_comment = reflection(experiment_log, survey_arg.to_string())
+
+        experiment_log += (
+            "-" * 25 + f"\nメタ評価者からのコメント:\n{reflection_comment}\n"
+        )
 
         idea_set = update_idea(
             idea,
@@ -117,6 +123,7 @@ def run_experiment(
             experiment_explanation,
             critic_message,
             survey_arg.to_string(),
+            reflection_comment
         )
 
         idea = f"{idea_set.idea}\n{idea_set.desc_of_idea}"
@@ -171,6 +178,7 @@ def run_experiment(
                 experiment_explanation,
                 critic_message,
                 combined_df.to_string(),
+                reflection_comment
             )
             code = improve_response.python_code
             code_desc = improve_response.desc_of_python_code
